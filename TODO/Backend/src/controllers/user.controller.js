@@ -79,4 +79,23 @@ export const login = async (req, res) => {
   }
 };
 
+// controllers/user.controller.js
+export const getUserProfile = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    res.json({
+      _id: req.user._id,
+      username: req.user.username,
+      email: req.user.email,
+      createdAt: req.user.createdAt,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 
