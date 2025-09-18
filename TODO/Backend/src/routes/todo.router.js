@@ -6,7 +6,7 @@ import { protect } from  "../middlewares/auth.middleware.js";
 const todosrouter = express.Router();
 
 // POST /api/todos → create new todo (protected)
-todosrouter.post("/addTodo", protect, addTodo);
+todosrouter.post("/", protect, addTodo);
 todosrouter.get("/", protect, getTodos);
 todosrouter.put("/:id", protect, updateTodo);
 todosrouter.delete("/:id", protect, deleteTodo);
