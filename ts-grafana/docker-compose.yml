@@ -1,0 +1,82 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - analytics-net
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: analytics
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    networks:
+      - analytics-net
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+
+  ingest:
+    build: .
+    command: ["bun", "index.ts"]
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://admin:secret@postgres:5432/analytics
+      REDIS_URL: redis://redis:6379
+      PORT: "8080"
+      ALLOWED_ORIGINS: "*"
+      RATE_LIMIT_PER_MINUTE: "6000"
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - analytics-net
+
+  worker:
+    build: .
+    command: ["bun", "src/worker.ts"]
+    environment:
+      DATABASE_URL: postgres://admin:secret@postgres:5432/analytics
+      REDIS_URL: redis://redis:6379
+      WORKER_BATCH_SIZE: "250"
+      WORKER_BLOCK_SECONDS: "2"
+      WORKER_FLUSH_MS: "1500"
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - analytics-net
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_DEFAULT_THEME: dark
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3000
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - postgres
+    networks:
+      - analytics-net
+
+networks:
+  analytics-net:
+    driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:

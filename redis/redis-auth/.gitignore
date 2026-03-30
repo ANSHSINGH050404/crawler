@@ -1,9 +1,0 @@
-node_modules
-env*
-.DS_Store
-.vscode
-npm-debug.log*
-coverage
-redis-stable
-redis-stable.tar.gz
-dump.rdb

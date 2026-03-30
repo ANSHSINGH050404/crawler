@@ -1,0 +1,126 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "postgres", "uid": "analytics-pg" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "drawStyle": "bars",
+            "fillOpacity": 35,
+            "lineWidth": 1
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "analytics-pg" },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  bucket_start AS \"time\",\n  SUM(event_count)::float AS throughput\nFROM engagement_minute\nWHERE $__timeFilter(bucket_start)\nGROUP BY 1\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Ingest throughput (events / minute bucket)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "analytics-pg" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "unit": "short" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "id": 2,
+      "options": {
+        "displayLabels": ["name", "percent"],
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value"] },
+        "pieType": "donut"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "analytics-pg" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  event_type AS metric,\n  COUNT(*)::float AS value\nFROM analytics_events\nWHERE $__timeFilter(received_at)\nGROUP BY 1\nORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Mix: event types",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "analytics-pg" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "id": 3,
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "analytics-pg" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  event_type,\n  COUNT(*)::bigint AS events\nFROM analytics_events\nWHERE $__timeFilter(received_at)\n  AND event_type IN ('video_start','video_progress','video_complete','video_pause','video_seek')\nGROUP BY 1\nORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Video engagement events",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "analytics-pg" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 17 },
+      "id": 4,
+      "options": { "showHeader": true, "sortBy": [{ "displayName": "events", "desc": true }] },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "analytics-pg" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  content_id,\n  COUNT(*) FILTER (WHERE event_type = 'video_start')::bigint AS video_starts,\n  COUNT(*) FILTER (WHERE event_type = 'video_complete')::bigint AS completes,\n  COUNT(*) AS events\nFROM analytics_events\nWHERE $__timeFilter(received_at)\n  AND content_id IS NOT NULL\nGROUP BY 1\nORDER BY events DESC\nLIMIT 25",
+          "refId": "A"
+        }
+      ],
+      "title": "Top content (video starts & completes)",
+      "type": "table"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["analytics", "engagement"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Engagement Overview",
+  "uid": "engagement-overview",
+  "version": 1,
+  "weekStart": ""
+}
